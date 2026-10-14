@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>로또 추첨기 & 점심 메뉴 추천</title>
+  <style>
+    /* DESIGN.md 색상 및 타이포그래피 */
+    :root {
+      --primary: #134B5F;      /* 청록 (주색) */
+      --accent: #D9741F;       /* 주황 (강조) */
+      --text: #1E2A30;         /* 먹색 (본문) */
+      --muted: #6B7A80;        /* 회색 (보조) */
+      --border: #D5DDE0;       /* 가는 선 */
+      --bg-light: #EEF3F5;     /* 옅은 청록 면 */
+      --bg-card: #FFFFFF;      /* 카드 흰 바탕 */
+      --bg-page: #F5F7F8;      /* 종이 회색 면 */
+      
+      /* 실제 로또 공 색상 */
+      --ball-yellow: #E5A93C;
+      --ball-blue: #3E82B8;
+      --ball-red: #D65A5A;
+      --ball-gray: #8A969E;
+      --ball-green: #48A368;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+      word-break: keep-all;
+    }
+
+    body {
+      background-color: var(--bg-page);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      padding: 16px 12px;
+      line-height: 1.5;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 480px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 24px 20px;
+    }
+
+    /* 제목 영역 */
+    .header {
+      margin-bottom: 16px;
+      border-bottom: 2px solid var(--primary);
+      padding-bottom: 12px;
+    }
+
+    .kicker {
+      font-size: 13px;
+      font-weight: bold;
+      color: var(--accent);
+      margin-bottom: 4px;
+      display: block;
+    }
+
+    .title {
+      font-size: 22px;
+      font-weight: bold;
+      color: var(--primary);
+    }
+
+    .subtitle {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    /* 메인 탭 전환 네비게이션 */
+    .tab-nav {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 18px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 10px;
+      font-size: 14px;
+      font-weight: bold;
+      border: 1px solid var(--border);
+      background: #FFFFFF;
+      color: var(--muted);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .tab-btn.active {
+      background: var(--primary);
+      color: #FFFFFF;
+      border-color: var(--primary);
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* [2] 오늘 날짜 행운 번호 카드 */
+    .lucky-card {
+      background-color: var(--bg-light);
+      border: 1px solid var(--primary);
+      border-radius: 6px;
+      padding: 12px 14px;
+      margin-bottom: 16px;
+    }
+
+    .lucky-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .lucky-title {
+      font-size: 13px;
+      font-weight: bold;
+      color: var(--primary);
+    }
+
+    .lucky-date {
+      font-size: 11px;
+      color: var(--accent);
+      font-weight: bold;
+    }
+
+    .lucky-ball-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 4px;
+    }
+
+    .lucky-ball {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #FFFFFF;
+      font-size: 14px;
+      font-weight: bold;
+      box-shadow: inset -1px -1px 3px rgba(0, 0, 0, 0.25);
+    }
+
+    /* 설정 섹션 */
+    .section-title {
+      font-size: 14px;
+      font-weight: bold;
+      color: var(--primary);
+      margin-bottom: 8px;
+    }
+
+    .control-box {
+      background-color: var(--bg-light);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 14px;
+      margin-bottom: 16px;
+    }
+
+    .mode-selector {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .mode-label {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #FFFFFF;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 8px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .mode-label input {
+      margin-right: 6px;
+      accent-color: var(--primary);
+    }
+
+    .mode-label.active {
+      border-color: var(--primary);
+      color: var(--primary);
+      outline: 2px solid var(--primary);
+    }
+
+    .filter-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .filter-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .filter-item label {
+      font-size: 12px;
+      font-weight: bold;
+      color: var(--text);
+    }
+
+    .filter-item input {
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 8px 10px;
+      font-size: 13px;
+      color: var(--text);
+      background: #FFFFFF;
+      outline: none;
+    }
+
+    .filter-item input:focus {
+      border-color: var(--primary);
+    }
+
+    .filter-hint {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    /* 주요 실행 버튼 */
+    .btn-draw {
+      width: 100%;
+      background-color: var(--primary);
+      color: #FFFFFF;
+      border: none;
+      border-radius: 6px;
+      padding: 14px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-bottom: 18px;
+      box-shadow: 0 2px 4px rgba(19, 75, 95, 0.15);
+      transition: background-color 0.2s;
+    }
+
+    .btn-draw:hover {
+      background-color: #0E3949;
+    }
+
+    .btn-draw:disabled {
+      background-color: var(--muted);
+      cursor: not-allowed;
+    }
+
+    /* 결과 표시 영역 */
+    .result-section {
+      margin-bottom: 20px;
+    }
+
+    .game-group {
+      margin-bottom: 12px;
+      background: #FFFFFF;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px;
+    }
+
+    .game-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      font-size: 13px;
+      font-weight: bold;
+      color: var(--primary);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 6px;
+    }
+
+    .ball-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* [1] 굴러나오며 통통 튕기는 키프레임 애니메이션 (소리 없음) */
+    @keyframes rollAndBounce {
+      0% {
+        opacity: 0;
+        transform: translateX(-50px) rotate(-240deg) scale(0.4);
+      }
+      60% {
+        opacity: 1;
+        transform: translateX(6px) rotate(20deg) scale(1.15);
+      }
+      80% {
+        transform: translateX(-3px) translateY(-6px) rotate(-8deg) scale(0.95);
+      }
+      100% {
+        opacity: 1;
+        transform: translateX(0) translateY(0) rotate(0deg) scale(1);
+      }
+    }
+
+    .ball {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #FFFFFF;
+      font-size: 16px;
+      font-weight: bold;
+      box-shadow: inset -2px -2px 5px rgba(0, 0, 0, 0.25), 0 2px 4px rgba(0, 0, 0, 0.15);
+      opacity: 0;
+      transform: scale(0);
+    }
+
+    .ball.show {
+      animation: rollAndBounce 0.55s ease-out forwards;
+    }
+
+    /* 공 번호대별 실제 색상 */
+    .c-1 { background-color: var(--ball-yellow); } /* 1~10 노랑 */
+    .c-2 { background-color: var(--ball-blue); }   /* 11~20 파랑 */
+    .c-3 { background-color: var(--ball-red); }    /* 21~30 빨강 */
+    .c-4 { background-color: var(--ball-gray); }   /* 31~40 회색 */
+    .c-5 { background-color: var(--ball-green); }  /* 41~45 초록 */
+
+    /* 보조 버튼 */
+    .action-group {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+
+    .btn-secondary {
+      flex: 1;
+      background: #FFFFFF;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 9px;
+      font-size: 13px;
+      font-weight: bold;
+      color: var(--primary);
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-secondary:hover {
+      background: var(--bg-light);
+    }
+
+    /* 기록 목록 */
+    .history-section {
+      border-top: 1px solid var(--border);
+      padding-top: 16px;
+    }
+
+    .history-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .history-list {
+      max-height: 160px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .history-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--bg-page);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 8px 10px;
+      font-size: 12px;
+    }
+
+    .history-time {
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .history-numbers {
+      font-weight: bold;
+      color: var(--primary);
+      letter-spacing: 0.5px;
+    }
+
+    /* [3] 점심 메뉴 추첨기 스타일 */
+    .menu-box {
+      background: var(--bg-light);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 16px;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+
+    .menu-candidates {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      justify-content: center;
+      margin-top: 10px;
+    }
+
+    .menu-chip {
+      background: #FFFFFF;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 13px;
+      font-weight: bold;
+      color: var(--text);
+    }
+
+    .menu-chip.highlight {
+      background: var(--primary);
+      color: #FFFFFF;
+      border-color: var(--primary);
+      transform: scale(1.05);
+    }
+
+    .menu-result-display {
+      background: #FFFFFF;
+      border: 2px dashed var(--primary);
+      border-radius: 8px;
+      padding: 32px 16px;
+      margin-bottom: 18px;
+      text-align: center;
+      min-height: 140px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .menu-chosen-text {
+      font-size: 28px;
+      font-weight: bold;
+      color: var(--primary);
+      margin-top: 6px;
+      transition: all 0.3s;
+    }
+
+    .menu-chosen-text.bounce {
+      animation: menuBounce 0.45s ease-out;
+    }
+
+    @keyframes menuBounce {
+      0% { transform: scale(0.6); opacity: 0; }
+      60% { transform: scale(1.2); opacity: 1; }
+      100% { transform: scale(1); }
+    }
+
+    /* 꼬리말 */
+    .footer {
+      margin-top: 24px;
+      text-align: center;
+      font-size: 12px;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+      padding-top: 12px;
+    }
+
+    /* 토스트 메시지 */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--text);
+      color: #FFFFFF;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+      z-index: 999;
+    }
+
+    .toast.show {
+      opacity: 0.95;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <!-- 제목부 (DESIGN.md) -->
+  <div class="header">
+    <span class="kicker">3교시 실습</span>
+    <h1 class="title">로또 추첨기 & 점심 메뉴</h1>
+    <div class="subtitle">무작위 번호 추출 및 점심 메뉴 추천 도구</div>
+  </div>
+
+  <!-- 메인 탭 전환 -->
+  <div class="tab-nav">
+    <button class="tab-btn active" id="tabBtnLotto" onclick="switchTab('lotto')">로또 번호 추첨</button>
+    <button class="tab-btn" id="tabBtnLunch" onclick="switchTab('lunch')">점심 메뉴 뽑기</button>
+  </div>
+
+  <!-- [탭 1: 로또 추첨기] -->
+  <div class="tab-content active" id="tabContentLotto">
+
+    <!-- [2] 오늘 날짜 기준 매일 고정되는 행운 번호 카드 -->
+    <div class="lucky-card">
+      <div class="lucky-header">
+        <span class="lucky-title">오늘의 고정 행운 번호 (1게임)</span>
+        <span class="lucky-date" id="todayDateStr"></span>
+      </div>
+      <div class="lucky-ball-row" id="luckyBallRow"></div>
+    </div>
+
+    <!-- 설정 영역 -->
+    <div class="control-box">
+      <div class="section-title">게임 수 선택</div>
+      <div class="mode-selector">
+        <label class="mode-label active" id="label-1game">
+          <input type="radio" name="gameMode" value="1" checked onchange="handleModeChange(1)">
+          1게임
+        </label>
+        <label class="mode-label" id="label-5game">
+          <input type="radio" name="gameMode" value="5" onchange="handleModeChange(5)">
+          5게임 (1세트)
+        </label>
+      </div>
+
+      <div class="filter-grid">
+        <div class="filter-item">
+          <label for="includeInput">꼭 넣을 번호 (최대 5개)</label>
+          <input type="text" id="includeInput" placeholder="예: 7, 15, 23 (쉼표 또는 공백 구분)">
+          <span class="filter-hint">1~45 범위 내에서 지정한 번호가 반드시 포함됩니다.</span>
+        </div>
+        <div class="filter-item">
+          <label for="excludeInput">빼고 싶은 번호 (제외 번호)</label>
+          <input type="text" id="excludeInput" placeholder="예: 4, 13, 44">
+          <span class="filter-hint">추첨에서 제외할 번호를 지정합니다.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 추첨 버튼 -->
+    <button class="btn-draw" id="drawBtn" onclick="startDraw()">번호 뽑기</button>
+
+    <!-- 결과 영역 -->
+    <div class="result-section" id="resultContainer">
+      <div class="game-group" style="text-align: center; color: var(--muted); padding: 26px 10px;">
+        위의 '번호 뽑기' 버튼을 누르면 공이 하나씩 굴러나옵니다.
+      </div>
+    </div>
+
+    <!-- 복사 버튼 그룹 -->
+    <div class="action-group" id="actionGroup" style="display: none;">
+      <button class="btn-secondary" onclick="copyResults()">추첨 번호 전체 복사</button>
+    </div>
+
+    <!-- 추첨 기록 목록 -->
+    <div class="history-section">
+      <div class="history-header">
+        <span class="section-title" style="margin-bottom: 0;">최근 추첨 기록</span>
+        <button class="btn-secondary" style="flex: none; padding: 4px 8px; font-size: 11px;" onclick="clearHistory()">기록 삭제</button>
+      </div>
+      <div class="history-list" id="historyList">
+        <div style="text-align: center; color: var(--muted); font-size: 12px; padding: 12px;">아직 추첨 기록이 없습니다.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- [탭 2: 점심 메뉴 뽑기] -->
+  <div class="tab-content" id="tabContentLunch">
+    <div class="menu-box">
+      <div class="section-title" style="margin-bottom: 4px;">후보 메뉴 목록 (5종)</div>
+      <div class="subtitle" style="margin-bottom: 10px;">선택 가능한 오늘의 점심 후보 메뉴입니다.</div>
+      <div class="menu-candidates" id="menuChips">
+        <div class="menu-chip">김치찌개</div>
+        <div class="menu-chip">돈가스</div>
+        <div class="menu-chip">국밥</div>
+        <div class="menu-chip">쌀국수</div>
+        <div class="menu-chip">비빔밥</div>
+      </div>
+    </div>
+
+    <!-- 메뉴 추첨 결과 화면 -->
+    <div class="menu-result-display">
+      <div style="font-size: 13px; color: var(--muted);" id="menuResultStatus">오늘의 추천 점심 메뉴는?</div>
+      <div class="menu-chosen-text" id="menuResultText">-</div>
+    </div>
+
+    <button class="btn-draw" id="lunchBtn" onclick="pickLunchMenu()">점심 메뉴 뽑기</button>
+  </div>
+
+  <!-- 꼬리말 -->
+  <div class="footer">
+    재미로만 쓰세요. 행운을 빕니다.
+  </div>
+</div>
+
+<div class="toast" id="toast">복사되었습니다.</div>
+
+<script>
+  let currentResults = [];
+  let historyData = [];
+  const lunchCandidates = ["김치찌개", "돈가스", "국밥", "쌀국수", "비빔밥"];
+
+  // 공 번호대별 클래스 반환
+  function getBallClass(num) {
+    if (num <= 10) return 'c-1';      // 1~10 노랑
+    if (num <= 20) return 'c-2';      // 11~20 파랑
+    if (num <= 30) return 'c-3';      // 21~30 빨강
+    if (num <= 40) return 'c-4';      // 31~40 회색
+    return 'c-5';                     // 41~45 초록
+  }
+
+  // 탭 전환 함수
+  function switchTab(tabName) {
+    const btnLotto = document.getElementById('tabBtnLotto');
+    const btnLunch = document.getElementById('tabBtnLunch');
+    const contentLotto = document.getElementById('tabContentLotto');
+    const contentLunch = document.getElementById('tabContentLunch');
+
+    if (tabName === 'lotto') {
+      btnLotto.classList.add('active');
+      btnLunch.classList.remove('active');
+      contentLotto.classList.add('active');
+      contentLunch.classList.remove('active');
+    } else {
+      btnLunch.classList.add('active');
+      btnLotto.classList.remove('active');
+      contentLunch.classList.add('active');
+      contentLotto.classList.remove('active');
+    }
+  }
+
+  // [2] 오늘 날짜 기반 매일 같은 행운 번호 (PRNG - Mulberry32)
+  function initDailyLuckyNumbers() {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    const dateInt = parseInt(`${y}${m}${d}`, 10);
+
+    document.getElementById('todayDateStr').textContent = `${y}-${m}-${d} 기준`;
+
+    // 날짜 기반 시드 의사 난수 생성기
+    function mulberry32(a) {
+      return function() {
+        let t = a += 0x6D2B79F5;
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    const rng = mulberry32(dateInt);
+    const pool = Array.from({ length: 45 }, (_, i) => i + 1);
+    const luckySet = [];
+
+    while (luckySet.length < 6 && pool.length > 0) {
+      const idx = Math.floor(rng() * pool.length);
+      luckySet.push(pool.splice(idx, 1)[0]);
+    }
+    luckySet.sort((a, b) => a - b);
+
+    const row = document.getElementById('luckyBallRow');
+    row.innerHTML = luckySet.map(n => `
+      <div class="lucky-ball ${getBallClass(n)}">${n}</div>
+    `).join('');
+  }
+
+  // 게임 수 모드 라디오 UI
+  function handleModeChange(mode) {
+    const l1 = document.getElementById('label-1game');
+    const l5 = document.getElementById('label-5game');
+    if (mode === 1) {
+      l1.classList.add('active');
+      l5.classList.remove('active');
+    } else {
+      l5.classList.add('active');
+      l1.classList.remove('active');
+    }
+  }
+
+  // 암호학적 안전 난수 생성 (min ~ max)
+  function secureRandomInt(min, max) {
+    const range = max - min + 1;
+    const array = new Uint32Array(1);
+    window.crypto.getRandomValues(array);
+    return min + (array[0] % range);
+  }
+
+  function parseNumberList(inputStr) {
+    if (!inputStr || !inputStr.trim()) return [];
+    return inputStr.split(/[\s,]+/)
+      .map(v => parseInt(v.trim(), 10))
+      .filter(v => !isNaN(v) && v >= 1 && v <= 45);
+  }
+
+  function generateSingleGame(includes, excludes) {
+    const chosen = new Set();
+    includes.forEach(n => {
+      if (!excludes.has(n) && chosen.size < 6) {
+        chosen.add(n);
+      }
+    });
+
+    const pool = [];
+    for (let i = 1; i <= 45; i++) {
+      if (!excludes.has(i) && !chosen.has(i)) {
+        pool.push(i);
+      }
+    }
+
+    if (chosen.size + pool.length < 6) {
+      throw new Error("제외 번호가 너무 많아 6개 번호를 구성할 수 없습니다.");
+    }
+
+    while (chosen.size < 6 && pool.length > 0) {
+      const idx = secureRandomInt(0, pool.length - 1);
+      const picked = pool.splice(idx, 1)[0];
+      chosen.add(picked);
+    }
+
+    return Array.from(chosen).sort((a, b) => a - b);
+  }
+
+  // 추첨 시작
+  function startDraw() {
+    const mode = parseInt(document.querySelector('input[name="gameMode"]:checked').value, 10);
+    const incInput = document.getElementById('includeInput').value;
+    const excInput = document.getElementById('excludeInput').value;
+
+    const includeList = Array.from(new Set(parseNumberList(incInput)));
+    const excludeSet = new Set(parseNumberList(excInput));
+
+    if (includeList.length > 5) {
+      alert("꼭 넣을 번호는 최대 5개까지만 입력할 수 있습니다.");
+      return;
+    }
+
+    const conflict = includeList.filter(n => excludeSet.has(n));
+    if (conflict.length > 0) {
+      alert(`'꼭 넣을 번호'와 '빼고 싶은 번호'에 중복된 번호(${conflict.join(', ')})가 있습니다.`);
+      return;
+    }
+
+    const games = [];
+    try {
+      for (let g = 0; g < mode; g++) {
+        games.push(generateSingleGame(includeList, excludeSet));
+      }
+    } catch (e) {
+      alert(e.message);
+      return;
+    }
+
+    currentResults = games;
+    renderGames(games);
+  }
+
+  // [1] 결과 렌더링 및 통통 튕기는 애니메이션 순차 실행
+  function renderGames(games) {
+    const container = document.getElementById('resultContainer');
+    const drawBtn = document.getElementById('drawBtn');
+    const actionGroup = document.getElementById('actionGroup');
+    
+    drawBtn.disabled = true;
+    container.innerHTML = '';
+
+    const labels = ['A', 'B', 'C', 'D', 'E'];
+    const ballQueue = [];
+
+    games.forEach((game, gIdx) => {
+      const gBox = document.createElement('div');
+      gBox.className = 'game-group';
+
+      const gHead = document.createElement('div');
+      gHead.className = 'game-header';
+      gHead.innerHTML = `<span>게임 ${labels[gIdx]}</span><span>자동 추첨</span>`;
+      gBox.appendChild(gHead);
+
+      const bRow = document.createElement('div');
+      bRow.className = 'ball-row';
+
+      game.forEach((num, bIdx) => {
+        const ball = document.createElement('div');
+        ball.className = `ball ${getBallClass(num)}`;
+        ball.textContent = num;
+        bRow.appendChild(ball);
+        ballQueue.push({ el: ball, delay: (gIdx * 6 + bIdx) * 85 });
+      });
+
+      gBox.appendChild(bRow);
+      container.appendChild(gBox);
+    });
+
+    ballQueue.forEach(item => {
+      setTimeout(() => {
+        item.el.classList.add('show');
+      }, item.delay);
+    });
+
+    const totalTime = ballQueue.length * 85 + 400;
+    setTimeout(() => {
+      drawBtn.disabled = false;
+      actionGroup.style.display = 'flex';
+      saveToHistory(games);
+    }, totalTime);
+  }
+
+  function saveToHistory(games) {
+    const now = new Date();
+    const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+
+    games.forEach((game, idx) => {
+      historyData.unshift({
+        time: timeStr,
+        gameText: `[${games.length === 1 ? '1게임' : String.fromCharCode(65 + idx)}] ${game.map(n => n.toString().padStart(2, '0')).join(', ')}`
+      });
+    });
+
+    if (historyData.length > 30) historyData = historyData.slice(0, 30);
+    renderHistory();
+  }
+
+  function renderHistory() {
+    const hList = document.getElementById('historyList');
+    if (historyData.length === 0) {
+      hList.innerHTML = '<div style="text-align: center; color: var(--muted); font-size: 12px; padding: 12px;">아직 추첨 기록이 없습니다.</div>';
+      return;
+    }
+    hList.innerHTML = historyData.map(item => `
+      <div class="history-item">
+        <span class="history-numbers">${item.gameText}</span>
+        <span class="history-time">${item.time}</span>
+      </div>
+    `).join('');
+  }
+
+  function clearHistory() {
+    historyData = [];
+    renderHistory();
+  }
+
+  function copyResults() {
+    if (!currentResults || currentResults.length === 0) return;
+    const labels = ['A', 'B', 'C', 'D', 'E'];
+    const lines = currentResults.map((game, idx) => {
+      const prefix = currentResults.length === 1 ? '로또 번호' : `게임 ${labels[idx]}`;
+      return `${prefix}: ${game.join(', ')}`;
+    });
+
+    const textToCopy = `[로또 추첨 결과]\n${lines.join('\n')}\n(재미로만 쓰세요)`;
+    navigator.clipboard.writeText(textToCopy).then(() => {
+      showToast("추첨 번호가 복사되었습니다.");
+    }).catch(() => {
+      showToast("복사에 실패했습니다.");
+    });
+  }
+
+  // [3] 점심 메뉴 뽑기 기능 (순차 하이라이트 후 선택)
+  function pickLunchMenu() {
+    const lunchBtn = document.getElementById('lunchBtn');
+    const resultText = document.getElementById('menuResultText');
+    const statusText = document.getElementById('menuResultStatus');
+    const chips = document.querySelectorAll('#menuChips .menu-chip');
+
+    lunchBtn.disabled = true;
+    statusText.textContent = "메뉴를 추첨 중입니다...";
+    resultText.classList.remove('bounce');
+
+    let counter = 0;
+    const totalFlips = 16;
+    const interval = setInterval(() => {
+      chips.forEach(c => c.classList.remove('highlight'));
+      const activeIdx = counter % lunchCandidates.length;
+      chips[activeIdx].classList.add('highlight');
+      resultText.textContent = lunchCandidates[activeIdx];
+      counter++;
+
+      if (counter >= totalFlips) {
+        clearInterval(interval);
+        // 최종 결정 (암호학적 난수)
+        const finalIdx = secureRandomInt(0, lunchCandidates.length - 1);
+        chips.forEach(c => c.classList.remove('highlight'));
+        chips[finalIdx].classList.add('highlight');
+        
+        resultText.textContent = lunchCandidates[finalIdx];
+        resultText.classList.add('bounce');
+        statusText.textContent = "오늘의 추천 점심 메뉴!";
+        lunchBtn.disabled = false;
+      }
+    }, 90);
+  }
+
+  function showToast(msg) {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => { toast.classList.remove('show'); }, 1800);
+  }
+
+  // 초기화: 오늘 날짜 행운 번호 생성
+  window.addEventListener('DOMContentLoaded', () => {
+    initDailyLuckyNumbers();
+  });
+</script>
+
+</body>
+</html>
